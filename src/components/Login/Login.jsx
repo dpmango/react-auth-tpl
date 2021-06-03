@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext, useCallback, memo } from 'react';
+import React, { useRef, useEffect, useReducer, useContext, useCallback, memo } from 'react';
 import { useHistory } from 'react-router-dom';
 import cns from 'classnames';
 
@@ -11,43 +11,47 @@ import styles from './Login.module.scss';
 const Login = () => {
   const history = useHistory();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
+  const reducer = useCallback((state, action) => {
+    const { key, value } = action;
+
+    return {
+      ...state,
+      [key]: value,
+    };
+  }, []);
+
+  const [state, dispatch] = useReducer(reducer, {
+    email: '',
+    password: '',
+    error: null,
+  });
 
   const authContext = useContext(AuthStoreContext);
 
   const emailRef = useRef(null);
 
-  const handleEmailChange = useCallback(
-    (val) => {
-      setEmail(val);
-    },
-    [setEmail]
-  );
+  const handleEmailChange = (val) => {
+    dispatch({ key: 'email', value: val });
+  };
 
-  const handlePasswordChange = useCallback(
-    (val) => {
-      setPassword(val);
-    },
-    [setPassword]
-  );
+  const handlePasswordChange = (val) => {
+    dispatch({ key: 'password', value: val });
+  };
 
   const handleSubmit = useCallback(
     (event) => {
       event.preventDefault();
 
       authContext
-        .auth({ email, password })
-        .then((res) => {
-          console.log(res);
+        .auth({ email: state.email, password: state.password })
+        .then((_res) => {
           history.push(routes.HOME);
         })
         .catch((_error) => {
-          setError(_error);
+          dispatch({ key: 'error', value: _error });
         });
     },
-    [email, password]
+    [state]
   );
 
   useEffect(() => {
@@ -60,13 +64,13 @@ const Login = () => {
       <form className={styles.wrapper} onSubmit={handleSubmit}>
         <div className={styles.title}>Log in</div>
 
-        {error && <div className={styles.error}>{error}</div>}
+        {state.error && <div className={styles.error}>{state.error}</div>}
 
         <Input
           label="Email"
           placeholder="Email"
           type="email"
-          value={email}
+          value={state.email}
           onChange={handleEmailChange}
           inputRef={emailRef}
         />
@@ -76,7 +80,7 @@ const Login = () => {
           label="Password"
           placeholder="Password"
           type="password"
-          value={password}
+          value={state.password}
           onChange={handlePasswordChange}
         />
 
